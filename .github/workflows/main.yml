@@ -1,0 +1,22 @@
+name: Fetch
+
+on:
+  workflow_dispatch:
+    inputs:
+      url:
+        description: 'to fetch'
+        required: true
+        default: 'https://wrd.ir/'
+
+jobs:
+  fetch-and-save:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Fetch website content
+        run: curl -v -L -o page.html "${{ github.event.inputs.url }}"
+
+      - name: Save result as Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: website-content
+          path: page.html
