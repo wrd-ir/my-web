@@ -12,11 +12,18 @@ jobs:
   fetch-and-save:
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+        
       - name: Fetch website content
-        run: curl -v -L -o page.html "${{ github.event.inputs.url }}"
-
-      - name: Save result as Artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: website-content
-          path: page.html
+        run: |
+          curl -v -L -o output.html "${{ github.event.inputs.url }}"
+          echo "Title: $(grep '<title>' output.html | head -1)"
+          
+      - name: Commit result to repo
+        run: |
+          git config user.name "GitHub Action"
+          git config user.email "action@github.com"
+          git add output.html
+          git commit -m "Fetched ${{ github.event.inputs.url }}" || echo "No changes"
+          git push
