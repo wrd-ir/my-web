@@ -1,4 +1,4 @@
-name: Fetch
+name: Fetch and Deploy
 
 on:
   workflow_dispatch:
@@ -10,6 +10,8 @@ on:
 
 permissions:
   contents: write
+  pages: write
+  id-token: write
 
 jobs:
   fetch-and-save:
@@ -17,13 +19,28 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       
-      - name: Fetch website
-        run: curl -v -L -o page.html "${{ github.event.inputs.url }}"
-      
-      - name: Push to repo
+      - name: Fetch entire website
         run: |
-          git config --global user.email "actions@github.com"
-          git config --global user.name "GitHub Actions"
-          git add page.html
-          git commit -m "Update page" || true
-          git push
+          mkdir -p site
+          wget \
+            --mirror \
+            --page-requisites \
+            --adjust-extension \
+            --convert-links \
+            --directory-prefix=site \
+            --span-hosts \
+            --domains=wrd.ir,cdn.jsdelivr.net,fonts.googleapis.com,fonts.gstatic.com \
+            --timeout=10 \
+            --tries=2 \
+            --no-check-certificate \
+            "${{ github.event.inputs.url }}"
+          
+          find site -name "index.html" | head -1 | xargs -I {} cp {} site/index.html 2>/dev/null || true
+          
+      - name: Upload to Pages
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: site/
+          
+      - name: Deploy to GitHub Pages
+        uses: actions/deploy-pages@v4
